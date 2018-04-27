@@ -48,6 +48,17 @@ behaviour_info(callbacks) ->
      {code_change, 3}
     ].
 
+behaviour_info(optional_callbacks) ->
+    [
+     {init, 1},
+     {handle_accept, 2},
+     {handle_call, 3},
+     {handle_cast, 2},
+     {handle_info, 2},
+     {terminate, 2},
+     {code_change, 3}
+    ].
+
 
 start_link(Name, Module, InitArgs, Options) ->
     gen_server:start_link(Name, ?MODULE, [{'__gen_listener_tcp_mod', Module} | InitArgs], Options).
@@ -100,7 +111,7 @@ init([{'__gen_listener_tcp_mod', Module} | InitArgs]) ->
         {ok, {Port, Options}, ModState} ->
             {ok, ListenSocket} = gen_tcp:listen(Port, Options),
 
-            error_logger:info_report([listening_started, {port, Port}, {lsock, ListenSocket} | Options]), 
+            error_logger:info_report([listening_started, {port, Port}, {lsock, ListenSocket} | Options]),
 
             {ok, create_acceptor(ListenSocket, Module, ModState)};
         ignore ->
@@ -113,7 +124,7 @@ init([{'__gen_listener_tcp_mod', Module} | InitArgs]) ->
 
 
 handle_call(Request, From, #listener_state{mod=Module, mod_state=ModState}=St) ->
-    case Module:handle_call(Request, From, ModState) of 
+    case Module:handle_call(Request, From, ModState) of
         {reply, Reply, NewModState} ->
             {reply, Reply, St#listener_state{mod_state=NewModState}};
         {reply, Reply, NewModState, hibernate} ->
@@ -208,7 +219,7 @@ create_acceptor(St) when is_record(St, listener_state) ->
     create_acceptor(St#listener_state.socket, St#listener_state.mod, St#listener_state.mod_state).
 
 create_acceptor(ListenSocket, Module, ModState) when is_port(ListenSocket) ->
-    {ok, Ref} = prim_inet:async_accept(ListenSocket, -1), 
+    {ok, Ref} = prim_inet:async_accept(ListenSocket, -1),
 
-    error_logger:info_report(waiting_for_connection), 
+    error_logger:info_report(waiting_for_connection),
     #listener_state{socket=ListenSocket, acceptor=Ref, mod=Module, mod_state=ModState}.
